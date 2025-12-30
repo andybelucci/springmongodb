@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +23,7 @@ public class TodoController {
     @Autowired
     private TodoRepository todoRepository;
 
-    @GetMapping("/todos")
+    @GetMapping("/todos") // Recuperação de todos os todos
     public ResponseEntity<?> getAllTodos() {
         List<TodoDTO> todos = todoRepository.findAll();
         if (todos.size() > 0) {
@@ -32,7 +33,7 @@ public class TodoController {
         }
     }
 
-    @PostMapping("/todos")
+    @PostMapping("/todos") // Criação de um novo todo
     public ResponseEntity<?> createTodo(@RequestBody TodoDTO todo) {
         try {
             todo.setCreatedAt(new Date(System.currentTimeMillis()));
@@ -44,13 +45,30 @@ public class TodoController {
         }
     }
 
-    @GetMapping("/todos/{id}")
+    @GetMapping("/todos/{id}") // Recuperação de um todo específico por ID
     public ResponseEntity<?> getSingleTodo(@PathVariable("id") String id) {
         Optional<TodoDTO> todoOptional = todoRepository.findById(id);
         if (todoOptional.isPresent()) {
             return new ResponseEntity<TodoDTO>(todoOptional.get(), HttpStatus.OK);
         } else {
             return new ResponseEntity<String>("Todo nothing was found for this ID.!", HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PutMapping("/todos/{id}") // Alteração de um todo existente
+    public ResponseEntity<?> updateById(@PathVariable("id") String id, @RequestBody TodoDTO todo) {
+        Optional<TodoDTO> todoOptional = todoRepository.findById(id);
+        if (todoOptional.isPresent()) {
+            TodoDTO todoToSave = todoOptional.get();
+            todoToSave.setCompleted(todo.isCompleted());
+            todoToSave.setTodo(todo.getTodo() != null ? todo.getTodo() : todoToSave.getTodo());
+            todoToSave.setDescription(
+                    todo.getDescription() != null ? todo.getDescription() : todoToSave.getDescription());
+            todoToSave.setUpdatedAt(new Date(System.currentTimeMillis()));
+            todoRepository.save(todoToSave);
+            return new ResponseEntity<>(todoToSave, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<String>("Todo nothing was found for this ID!" + id, HttpStatus.NOT_FOUND);
         }
     }
 
